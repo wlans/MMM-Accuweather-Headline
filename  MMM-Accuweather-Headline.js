@@ -1,111 +1,102 @@
-Module.register("weatherHeadlineWithEmoji", {
-    // Default module config.
+Module.register("MMM-Accuweather-Headline", {
+    // Default configuration
     defaults: {
-        updateInterval: 60 * 60 * 1000, // Update every 1 hour
-        apiKey: "YOUR_API_KEY",
-        locationKey: "LOCATION_KEY",
+        updateInterval: 60 * 60 * 1000, // Update every hour
     },
 
-    // Function to start the module
+    // Start the module
     start: function () {
         Log.info("Starting module: " + this.name);
-        this.getWeatherHeadline();
+        this.updateHeadline();
         setInterval(() => {
-            this.getWeatherHeadline();
+            this.updateHeadline();
         }, this.config.updateInterval);
     },
 
-    getStyles: function () {
-        return ["weatherHeadlineWithEmoji.css"];
-    },
-
-
-    // Function to get weather data and display the headline with an emoji
-    getWeatherHeadline: function () {
+    // Request weather headline from the Node helper
+    updateHeadline: function () {
+        // Send socket notification to request the weather headline
         const apiKey = this.config.apiKey;
         const locationKey = this.config.locationKey;
-        const url = `http://dataservice.accuweather.com/alerts/v1/${locationKey}?apikey=${apiKey}`;
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data[0]) {
-                    const headline = data[0]; // Get the first alert (headline)
-                    const headlineWithEmoji = this.getWeatherHeadlineWithEmoji(headline);
-                    this.updateDomWithHeadline(headlineWithEmoji);
-                }
-            })
-            .catch(error => {
-                console.error("Error fetching weather headline:", error);
-            });
+        Log.debug("Requesting weather headline from Node helper...");
+        this.sendSocketNotification("FETCH_WEATHER_HEADLINE", { apiKey: apiKey, locationKey: locationKey });
     },
 
-    // Function to format the headline with an emoji
-    getWeatherHeadlineWithEmoji: function (headline) {
-        const weatherEmojis = {
-            "Clear": "☀️",
-            "Sunny": "☀️",
-            "Partly sunny": "🌤️",
-            "Mostly cloudy": "☁️",
-            "Intermittent clouds": "🌥️",
-            "Showers": "🌧️",
-            "Thunderstorms": "⛈️",
-            "Light rain": "🌦️",
-            "Rain": "🌧️",
-            "Snow": "❄️",
-            "Fog": "🌫️",
-            "Windy": "🌬️",
-            "Hot": "🔥",
-            "Cold": "🥶",
-            "Warmer": "🌡️",
-        };
-
-        // Map the Category to an emoji or fall back to Text
-        const emoji = weatherEmojis[headline.Category] || this.getWeatherEmoji(headline.Text);
-        return `${headline.Text} ${emoji}`;
-    },
-
-    // Function to check for weather conditions and return emoji
-    getWeatherEmoji: function (phrase) {
-        const weatherEmojis = {
-            "Clear": "☀️",
-            "Sunny": "☀️",
-            "Partly sunny": "🌤️",
-            "Mostly cloudy": "☁️",
-            "Intermittent clouds": "🌥️",
-            "Showers": "🌧️",
-            "Thunderstorms": "⛈️",
-            "Light rain": "🌦️",
-            "Rain": "🌧️",
-            "Snow": "❄️",
-            "Fog": "🌫️",
-            "Windy": "🌬️",
-            "Hot": "🔥",
-            "Cold": "🥶",
-            "Warmer": "🌡️",
-        };
-
-        for (let condition in weatherEmojis) {
-            if (phrase.includes(condition)) {
-                return weatherEmojis[condition];
-            }
-        }
-        return "🌥️";  // Default to clouds if not found
-    },
-
-    // Function to update the DOM with the formatted headline
-    updateDomWithHeadline: function (headlineWithEmoji) {
-        const element = document.querySelector(".weather-headline");
-        if (element) {
-            element.textContent = headlineWithEmoji;
+    // Handle the data received from the Node helper
+    socketNotificationReceived: function (notification, payload) {
+        if (notification === "WEATHER_HEADLINE") {
+            Log.debug("Received weather headline:", payload.headline);
+            const transformedHeadline = this.transformHeadline(payload.headline);
+            this.updateDom(transformedHeadline);
         }
     },
 
-    // Get the DOM to show
+    // Create the DOM element for the module (Only once)
     getDom: function () {
-        const wrapper = document.createElement("div");
-        wrapper.className = "weather-headline";
-        wrapper.textContent = "Fetching weather headline...";
-        return wrapper;
+        Log.debug("Creating DOM element for weather headline.");
+        if (!this.wrapper) {
+            this.wrapper = document.createElement("div");
+            this.wrapper.className = "weather-headline";
+            this.wrapper.textContent = "Fetching weather headline...";  // Initial message
+        }
+        return this.wrapper;
     },
+
+    // Update the DOM with the fetched headline
+    updateDom: function (transformedHeadline) {
+        Log.debug("Updating DOM with the weather headline:", transformedHeadline);
+        const wrapper = this.getDom();  // Get the existing DOM element
+        wrapper.textContent = transformedHeadline || "No headline available.";  // Update the text content
+    },
+
+    // Transform the headline and add emojis
+    transformHeadline: function (headline) {
+        const weatherEmojis = [
+            { condition: "Clear", emoji: "☀️" },
+            { condition: "Sunny", emoji: "☀️" },
+            { condition: "Partly sunny", emoji: "🌤️" },
+            { condition: "Mostly cloudy", emoji: "☁️" },
+            { condition: "Intermittent clouds", emoji: "🌥️" },
+            { condition: "Showers", emoji: "🌧️" },
+            { condition: "Thunderstorm", emoji: "⛈️" },
+            { condition: "Light rain", emoji: "🌦️" },
+            { condition: "Rain", emoji: "🌧️" },
+            { condition: "Snow", emoji: "❄️" },
+            { condition: "Fog", emoji: "🌫️" },
+            { condition: "Windy", emoji: "🌬️" },
+            { condition: "Hot", emoji: "🔥" },
+            { condition: "Cold", emoji: "🥶" },
+            { condition: "Cooler", emoji: "🥶" },
+            { condition: "Warmer", emoji: "🌡️" },
+            { condition: "Mild", emoji: "🌿" },
+            { condition: "Blizzard", emoji: "🌨️" },
+            { condition: "Chilly", emoji: "🥶" }
+        ];
+
+        // Map the weatherEmojis array to lowercase the conditions
+        const normalizedWeatherEmojis = weatherEmojis.map(entry => ({
+            condition: entry.condition.toLowerCase(),
+            emoji: entry.emoji
+        }));
+
+        // Normalize the headline category to lowercase
+        const headlineCategoryLower = headline.Category ? headline.Category.toLowerCase() : "";
+
+        // Check if any condition in normalizedWeatherEmojis matches the headline.Category
+        const match = normalizedWeatherEmojis.find(entry => headlineCategoryLower.includes(entry.condition));
+
+        // If a match is found, return the headline with emoji
+        if (match) {
+            return `${headline.Text} ${match.emoji}`;
+        }
+
+        // If no match was found, log it and return the headline without an emoji
+        Log.debug("No matching weather condition found for headline:", headline.Category);
+        return headline.Text;  // Return the headline without emoji if no match is found
+    }
+
+
+
+
 });

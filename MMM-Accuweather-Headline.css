@@ -1,0 +1,12 @@
+.weather-headline {
+  padding: 10px; /* Add padding to all sides */
+  font-size: 20px; /* Adjust font size if necessary */
+  font-weight: bold; /* Make the text bold */
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+  color: white; /* Text color */
+  border-radius: 5px; /* Optional: rounded corners */
+  margin: 10px 0; /* Optional: margin above and below */
+  text-align: center; /* Center-align the text */
+  overflow-wrap: break-word; /* Prevent text from overflowing */
+  word-wrap: break-word; /* Ensure long words break properly */
+}
