@@ -4,6 +4,9 @@
 
 ---
 
+<img width="437" alt="image" src="https://github.com/user-attachments/assets/9623d6ec-198d-43f1-abcb-5f8cec94f8ba" />
+
+
 ## ✨ Features
 
 - Pulls top AccuWeather **headline forecasts** for your location.
